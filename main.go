@@ -6,12 +6,14 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 )
 
 var dictionary = map[string]bool{}
 var dictionaryKeys []string
+var inputReader = bufio.NewReader(os.Stdin)
 
 const resourcesPath = "resources/"
 const dictionaryFileName = "dictionary.txt"
@@ -44,7 +46,7 @@ func main() {
 	word := getRandomWord()
 	selectTwoLetters(word, guessedLetters)
 	printLayout(word, guessedLetters, 9, []string{"a", "b", "l"}, 10, 3, 2, 1)
-
+	fmt.Println(readInput())
 }
 
 // It's easier to random select a word from a slice than of a map!
@@ -164,9 +166,18 @@ func printLayout(word string, guessedLetters map[rune]bool, hangmanState int, us
 	fmt.Println(hangman)
 	fmt.Println(firstLine)
 	fmt.Println(secondLine)
-	fmt.Println("Used letters: " + getUsedLetters(usedLetters))
+	fmt.Println("Used letters: ", getUsedLetters(usedLetters))
 	fmt.Println(cardinalsLine)
 	fmt.Println(t[0:24], w[0:11], d[0:24], h)
 	fmt.Println(cardinalsLine)
+	fmt.Print("Type character (? for hint): ")
+}
 
+func readInput() string {
+
+	input, err := inputReader.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	return strings.TrimSpace(input)
 }
