@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
+	"unicode"
 )
 
 var dictionary = map[string]bool{}
@@ -36,13 +38,12 @@ func main() {
 	//				- if hangman complete, game over (continue yes or no)
 	//				- hangman not complete, continue game
 
+	guessedLetters := make(map[rune]bool)
 	loadDictionary()
-	for word := range dictionary {
-		fmt.Println(word)
-	}
 	getDictionaryKeys()
-	fmt.Println("-----------------")
-	fmt.Println(selectWord())
+	word := getRandomWord()
+	selectTwoLetters(word, guessedLetters)
+	printLayout(word, guessedLetters, 9, []string{"a", "b", "l"}, 10, 3, 2, 1)
 
 }
 
@@ -56,7 +57,18 @@ func getDictionaryKeys() {
 	}
 }
 
-func selectWord() string {
+func selectTwoLetters(word string, guessedLetters map[rune]bool) {
+	seed := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(seed)
+
+	f := random.Intn(len(word))
+	s := random.Intn(len(word))
+
+	guessedLetters[unicode.ToLower(rune(word[f]))] = true
+	guessedLetters[unicode.ToLower(rune(word[s]))] = true
+}
+
+func getRandomWord() string {
 	seed := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(seed)
 
@@ -99,5 +111,62 @@ func loadDictionary() {
 	if err != nil {
 		panic(err)
 	}
+
+}
+
+func getHangman(hangmanState int) string {
+	data, err := os.ReadFile(fmt.Sprintf(resourcesPath+"/hangman_states/hangman%d", hangmanState))
+
+	if err != nil {
+		panic(err)
+	}
+
+	return string(data)
+}
+
+func wordToGuessingState(word string, guessedLetters map[rune]bool) string {
+
+	guessingState := ""
+	for _, letter := range word {
+		if letter == ' ' {
+			guessingState += " "
+		} else if guessedLetters[unicode.ToLower(letter)] {
+			guessingState += string(letter)
+		} else {
+			guessingState += "_"
+		}
+		guessingState += " "
+	}
+	return guessingState
+}
+
+func getUsedLetters(letters []string) string {
+	result := ""
+	for _, l := range letters {
+		result += l + " "
+	}
+	return result
+}
+
+func printLayout(word string, guessedLetters map[rune]bool, hangmanState int, usedLetters []string, trys int, wins int, defeats int, hints int) {
+
+	hangman := getHangman(hangmanState)
+	firstLine := "  **             " + wordToGuessingState(word, guessedLetters)
+	secondLine := "##############"
+	cardinalsLine := "#################################################################################"
+
+	t := "## Trys: " + strconv.Itoa(trys) + "               "
+	w := "Wins: " + strconv.Itoa(wins) + "          "
+	d := "Defeats: " + strconv.Itoa(defeats) + "                    "
+	h := "Hints allowed: " + strconv.Itoa(hints) + " ##"
+
+	fmt.Println()
+	fmt.Println(hangman)
+	fmt.Println(firstLine)
+	fmt.Println(secondLine)
+	fmt.Println("Used letters: " + getUsedLetters(usedLetters))
+	fmt.Println(cardinalsLine)
+	fmt.Println(t[0:24], w[0:11], d[0:24], h)
+	fmt.Println(cardinalsLine)
 
 }
