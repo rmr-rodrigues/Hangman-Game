@@ -71,16 +71,11 @@ func selectWord() string {
 	}
 }
 
-func checkErrors(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func loadDictionary() {
 	readFile, err := os.Open(resourcesPath + dictionaryFileName)
-	checkErrors(err)
-	defer readFile.Close()
+	if err != nil {
+		panic(err)
+	}
 
 	if err != nil {
 		fmt.Println()
@@ -99,4 +94,10 @@ func loadDictionary() {
 			dictionary[line] = false
 		}
 	}
+
+	err = readFile.Close()
+	if err != nil {
+		panic(err)
+	}
+
 }
