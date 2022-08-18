@@ -3,10 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
+	"time"
 )
 
 var dictionary = map[string]bool{}
+var dictionaryKeys []string
 
 const resourcesPath = "resources/"
 const dictionaryFileName = "dictionary.txt"
@@ -37,15 +40,46 @@ func main() {
 	for word := range dictionary {
 		fmt.Println(word)
 	}
+	getDictionaryKeys()
+	fmt.Println("-----------------")
+	fmt.Println(selectWord())
 
 }
 
-func generateWordForGuessing() {
+// It's easier to random select a word from a slice than of a map!
+func getDictionaryKeys() {
+	dictionaryKeys = make([]string, len(dictionary))
+	i := 0
+	for word := range dictionary {
+		dictionaryKeys[i] = word
+		i++
+	}
+}
 
+func selectWord() string {
+	seed := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(seed)
+
+	for {
+		index := random.Intn(len(dictionaryKeys))
+		word := dictionaryKeys[index]
+
+		if !dictionary[word] {
+			dictionary[word] = true
+			return word
+		}
+	}
+}
+
+func checkErrors(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
 
 func loadDictionary() {
 	readFile, err := os.Open(resourcesPath + dictionaryFileName)
+	checkErrors(err)
 	defer readFile.Close()
 
 	if err != nil {

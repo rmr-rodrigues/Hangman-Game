@@ -1,3 +1,19 @@
 apple
-
+score
 House
+update
+hangman
+complete
+game over
+you win
+validate
+letter
+Portugal
+United Kingdom
+Florida
+Miami Beach
+California
+New Zealand
+computer
+United States of America
+monster
