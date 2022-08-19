@@ -23,6 +23,7 @@ const dictionaryFileName = "dictionary.txt"
 
 func main() {
 
+	// TODO remove the global variables
 	// TODO use colors on the messages text
 	// TODO remove the "enter to continue" when the letter is repeated or invalid, just accept a new letter
 	// TODO organize the data in structs
