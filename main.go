@@ -22,8 +22,14 @@ const resourcesPath = "resources/"
 const dictionaryFileName = "dictionary.txt"
 
 func main() {
+
 	// TODO use colors on the messages text
 	// TODO remove the "enter to continue" when the letter is repeated or invalid, just accept a new letter
+	// TODO organize the data in structs
+	// TODO divide the main function in several functions to better organize and present the code
+	// TODO in the function 'selectTwoRandomLetters', if indexs or letters are equal generate different ones
+	// TODO in the function 'getDictionary', filter words that are not according to a regex to prevent errors
+	// TODO organize the dictionary by categories and present the category when user is trying to guess the word that way it would be more challenging, I think!
 
 	loadDictionary()
 	getDictionaryKeys()
@@ -118,7 +124,7 @@ func selectTwoRandomLetters(word *string, guessedLetters map[rune]bool, usedLett
 	f := random.Intn(len(*word))
 	s := random.Intn(len(*word))
 
-	if f != s { // TODO if letters are equal generate different ones
+	if f != s {
 		guessedLetters[unicode.ToLower(rune((*word)[f]))] = true
 		guessedLetters[unicode.ToLower(rune((*word)[s]))] = true
 		*usedLetters = append(*usedLetters, string(rune((*word)[f])))
@@ -160,7 +166,6 @@ func loadDictionary() {
 
 	fileScanner.Split(bufio.ScanLines)
 
-	// TODO filter words that are not according to a regex
 	for fileScanner.Scan() {
 		line := fileScanner.Text()
 		if line != "" {
@@ -172,7 +177,6 @@ func loadDictionary() {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func getHangman(hangmanState int) string {
@@ -263,7 +267,7 @@ func clearConsole() {
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
 	if err != nil {
-		fmt.Println("Cleaning console doesn't work in this OS!")
+		fmt.Println("Clearing the console doesn't work in this OS!")
 	}
 }
 
