@@ -42,17 +42,16 @@ func main() {
 
 		guessedLetters := make(map[rune]bool)
 		usedLetters := make([]string, 0, 10)
-		selectTwoLetters(&word, guessedLetters, &usedLetters)
+		selectTwoRandomLetters(&word, guessedLetters, &usedLetters)
 		msg := ""
 
 		for {
 			msg = ""
-			clearConsole()
+
 			printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
 			input := readInput()
 
 			if !validateInput(input) { // not a valid input
-				clearConsole()
 				msg = "Invalid input! (enter to continue) "
 				printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
 				readInput()
@@ -60,10 +59,18 @@ func main() {
 				if input == "?" && hints > 0 {
 					hint := getHint(&word, guessedLetters, &usedLetters, &hints)
 					if hint != "" {
-						msg = fmt.Sprintf("Hint: %s", hint)
+						msg = fmt.Sprintf("Hint: %s (enter to continue) ", hint)
+						printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+						readInput()
 					} else {
 						msg = "It's not possible to give you an hint!"
+						printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+						readInput()
 					}
+				} else if input == "?" && hints == 0 { // No more hints
+					msg = "Sorry, no more hints! (enter to continue) "
+					printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+					readInput()
 				} else if input == "0" {
 					os.Exit(0)
 				} else if isNewGuess(&word, &input, guessedLetters) { // New correct letter
@@ -72,7 +79,6 @@ func main() {
 					trys++
 				} else if isRepeatedLetter(&input, &usedLetters) { // Repeated letter, just try again
 					msg = "Repeated letter! (enter to continue) "
-					clearConsole()
 					printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
 					readInput()
 				} else { // Failed letter
@@ -97,21 +103,21 @@ func getDictionaryKeys() {
 	}
 }
 
-func selectTwoLetters(word *string, guessedLetters map[rune]bool, usedLetters *[]string) {
+func selectTwoRandomLetters(word *string, guessedLetters map[rune]bool, usedLetters *[]string) {
 	seed := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(seed)
 
 	f := random.Intn(len(*word))
 	s := random.Intn(len(*word))
 
-	guessedLetters[unicode.ToLower(rune((*word)[f]))] = true
-	guessedLetters[unicode.ToLower(rune((*word)[s]))] = true
-
-	if f == s {
-		*usedLetters = append(*usedLetters, string(rune((*word)[f])))
-	} else {
+	if f != s { // TODO if letters are equal generate different ones
+		guessedLetters[unicode.ToLower(rune((*word)[f]))] = true
+		guessedLetters[unicode.ToLower(rune((*word)[s]))] = true
 		*usedLetters = append(*usedLetters, string(rune((*word)[f])))
 		*usedLetters = append(*usedLetters, string(rune((*word)[s])))
+	} else {
+		guessedLetters[unicode.ToLower(rune((*word)[f]))] = true
+		*usedLetters = append(*usedLetters, string(rune((*word)[f])))
 	}
 }
 
@@ -171,10 +177,10 @@ func getHangman(hangmanState int) string {
 	return string(data)
 }
 
-func wordToGuessingState(word string, guessedLetters map[rune]bool) string {
+func wordToGuessingState(word *string, guessedLetters map[rune]bool) string {
 
 	guessingState := ""
-	for _, letter := range word {
+	for _, letter := range *word {
 		if letter == ' ' {
 			guessingState += " "
 		} else if guessedLetters[unicode.ToLower(letter)] {
@@ -187,9 +193,9 @@ func wordToGuessingState(word string, guessedLetters map[rune]bool) string {
 	return guessingState
 }
 
-func getUsedLetters(letters []string) string {
+func getUsedLetters(letters *[]string) string {
 	result := ""
-	for _, l := range letters {
+	for _, l := range *letters {
 		result += l + " "
 	}
 	return result
@@ -201,7 +207,7 @@ func printLayout(msg string, word string, guessedLetters map[rune]bool, hangmanS
 		msg = "Type character (? for hint or 0 to quit): "
 	}
 	hangman := getHangman(hangmanState)
-	firstLine := "  **             " + wordToGuessingState(word, guessedLetters)
+	firstLine := "  **             " + wordToGuessingState(&word, guessedLetters)
 	secondLine := "##############"
 	cardinalsLine := "#################################################################################"
 
@@ -210,11 +216,12 @@ func printLayout(msg string, word string, guessedLetters map[rune]bool, hangmanS
 	d := "Defeats: " + strconv.Itoa(defeats) + "                    "
 	h := "Hints allowed: " + strconv.Itoa(hints) + " ##"
 
+	clearConsole()
 	fmt.Println()
 	fmt.Println(hangman)
 	fmt.Println(firstLine)
 	fmt.Println(secondLine)
-	fmt.Println("Used letters: ", getUsedLetters(usedLetters))
+	fmt.Println("Used letters: ", getUsedLetters(&usedLetters))
 	fmt.Println(cardinalsLine)
 	fmt.Println(t[0:24], w[0:11], d[0:24], h)
 	fmt.Println(cardinalsLine)
@@ -231,7 +238,7 @@ func readInput() string {
 }
 
 func validateInput(input string) bool {
-	validate, _ := regexp.MatchString(`^[A-Za-z\?0]$`, input)
+	validate, _ := regexp.MatchString(`^[A-Za-z?0]$`, input)
 
 	return validate
 }
@@ -246,7 +253,10 @@ func clearConsole() {
 	}
 
 	cmd.Stdout = os.Stdout
-	cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Cleaning console doesn't work in this OS!")
+	}
 }
 
 func isNewGuess(word *string, ch *string, guessedLetters map[rune]bool) bool {
