@@ -22,15 +22,8 @@ const resourcesPath = "resources/"
 const dictionaryFileName = "dictionary.txt"
 
 func main() {
-
-	// 5 - Verify game state
-	//		- if word is guessed, you win
-	//			- update scores
-	//		- if word not guessed
-	//			- update scores
-	//			- verify hangman state
-	//				- if hangman complete, game over (continue yes or no)
-	//				- hangman not complete, continue game
+	// TODO use colors on the messages text
+	// TODO remove the "enter to continue" when the letter is repeated or invalid, just accept a new letter
 
 	loadDictionary()
 	getDictionaryKeys()
@@ -44,53 +37,68 @@ func main() {
 		usedLetters := make([]string, 0, 10)
 		selectTwoRandomLetters(&word, guessedLetters, &usedLetters)
 		msg := ""
+		hangmanState = 0
+		trys = 0
+		hints = 1
 
 		for {
-			msg = ""
+			if hasGuessedAllLetters(&word, guessedLetters) { // You Win
 
-			printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
-			input := readInput()
-
-			if !validateInput(input) { // not a valid input
-				msg = "Invalid input! (enter to continue) "
+				msg = "You Win! (enter to continue) "
+				wins++
 				printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
 				readInput()
-			} else { // Valid input
-				if input == "?" && hints > 0 {
-					hint := getHint(&word, guessedLetters, &usedLetters, &hints)
-					if hint != "" {
-						msg = fmt.Sprintf("Hint: %s (enter to continue) ", hint)
+				break
+			} else if hangmanState == 9 { //You lost
+				msg = "You lost! (enter to continue) "
+				defeats++
+				printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+				readInput()
+				break
+			} else {
+				msg = ""
+				printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+				input := readInput()
+				if !validateInput(input) { // not a valid input
+					msg = "Invalid input! (enter to continue) "
+					printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+					readInput()
+				} else { // Valid input
+					if input == "?" && hints > 0 {
+						hint := getHint(&word, guessedLetters, &usedLetters, &hints)
+						if hint != "" {
+							msg = fmt.Sprintf("Hint: %s (enter to continue) ", hint)
+							printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+							readInput()
+						} else {
+							msg = "It's not possible to give you an hint!"
+							printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
+							readInput()
+						}
+					} else if input == "?" && hints == 0 { // No more hints
+						msg = "Sorry, no more hints! (enter to continue) "
 						printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
 						readInput()
-					} else {
-						msg = "It's not possible to give you an hint!"
+					} else if input == "0" {
+						os.Exit(0)
+					} else if isNewGuess(&word, &input, guessedLetters) { // New correct letter
+						guessedLetters[rune(input[0])] = true
+						usedLetters = append(usedLetters, input)
+						trys++
+					} else if isRepeatedLetter(&input, &usedLetters) { // Repeated letter, just try again
+						msg = "Repeated letter! (enter to continue) "
 						printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
 						readInput()
+					} else { // Failed letter
+						msg = ""
+						hangmanState++
+						usedLetters = append(usedLetters, input)
+						trys++
 					}
-				} else if input == "?" && hints == 0 { // No more hints
-					msg = "Sorry, no more hints! (enter to continue) "
-					printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
-					readInput()
-				} else if input == "0" {
-					os.Exit(0)
-				} else if isNewGuess(&word, &input, guessedLetters) { // New correct letter
-					guessedLetters[rune(input[0])] = true
-					usedLetters = append(usedLetters, input)
-					trys++
-				} else if isRepeatedLetter(&input, &usedLetters) { // Repeated letter, just try again
-					msg = "Repeated letter! (enter to continue) "
-					printLayout(msg, word, guessedLetters, hangmanState, usedLetters, trys, wins, defeats, hints)
-					readInput()
-				} else { // Failed letter
-					msg = ""
-					hangmanState++
-					usedLetters = append(usedLetters, input)
-					trys++
 				}
 			}
 		}
 	}
-
 }
 
 // It's easier to random select a word from a slice than from a map keys!
@@ -234,7 +242,7 @@ func readInput() string {
 	if err != nil {
 		panic(err)
 	}
-	return strings.TrimSpace(input)
+	return strings.TrimSpace(strings.ToLower(input))
 }
 
 func validateInput(input string) bool {
@@ -289,4 +297,13 @@ func getHint(word *string, guessedLetters map[rune]bool, usedLetters *[]string, 
 		}
 	}
 	return ""
+}
+
+func hasGuessedAllLetters(word *string, guessedLetters map[rune]bool) bool {
+	for _, l := range *word {
+		if !guessedLetters[unicode.ToLower(l)] {
+			return false
+		}
+	}
+	return true
 }
